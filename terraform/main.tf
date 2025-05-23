@@ -8,13 +8,10 @@ terraform {
 }
 
 provider aws {
-  profile="Sanders003"
   region = "ap-south-2"
 }
 
-resource aws_default_vpc default {
-
-}
+resource aws_default_vpc default {}
 
 resource aws_security_group flask_sg {
   name        = "flask_sg"
@@ -45,7 +42,6 @@ resource aws_security_group flask_sg {
   }
 }
 
-
 resource aws_instance flask_app {
   ami           = "ami-053a0835435bf4f45"
   instance_type = "t3.micro"
@@ -54,5 +50,24 @@ resource aws_instance flask_app {
 
   tags = {
     Name = "FlaskAppServer"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Setting up the Flask app server...'",
+      "sudo apt-get update -y",
+      "sudo apt-get install -y docker.io",
+      "sudo usermod -aG docker $USER",
+      "sg docker -c 'docker pull sanders003/flask-auth-app:latest'",
+      "sg docker -c 'docker run -d -p 8000:8000 sanders003/flask-auth-app:latest'"
+    ]
+
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file("./devops_project.pem")
+      host        = aws_instance.flask_app.public_dns
+    }
   }
 }
