@@ -58,10 +58,12 @@ resource aws_instance flask_app {
       "sudo apt-get update -y",
       "sudo apt-get install -y docker.io",
       "sudo usermod -aG docker $USER",
-      "sg docker -c 'docker pull sanders003/flask-auth-app:latest'",
-      "sg docker -c 'docker run -d -p 8000:8000 sanders003/flask-auth-app:latest'"
+      "newgrp docker", 
+      "sudo systemctl enable docker",
+      "sudo systemctl start docker",
+      "docker pull sanders003/flask-auth-app:latest",
+      "docker run -d -p 8000:8000 sanders003/flask-auth-app:latest"
     ]
-
 
     connection {
       type        = "ssh"

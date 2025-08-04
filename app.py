@@ -5,16 +5,17 @@ from flask_login import (
     login_user,
     login_required,
     logout_user,
-    UserMixin,
-    current_user,
+    UserMixin
 )
 import os
-basedir = os.path.abspath(os.path.dirname(__file__))
 
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secretkey"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db')
+a = os.path.join(basedir, 'instance', 'app.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + a
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -65,6 +66,7 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
 
 @app.route("/home")
 @login_required

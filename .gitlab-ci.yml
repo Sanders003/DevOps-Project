@@ -1,0 +1,99 @@
+stages:
+  - lint
+  - test
+  - build
+  - staging
+  - deploy_production
+
+variables:
+  DOCKER_IMAGE: "sanders003/flask-auth-app:latest"
+  TF_ROOT: ${CI_PROJECT_DIR}/terraform
+  TF_STATE_NAME: default
+  AWS_ACCESS_KEY_ID: ${AWS_ROOT_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${AWS_ROOT_ACCESS_KEY}
+  AWS_DEFAULT_REGION: "ap-south-2"
+
+default:
+  image:
+    name: registry.gitlab.com/sanders003-group/devops-project/terraform
+
+cache:
+  key: "${TF_STATE_NAME}"
+  paths:
+    - ${TF_ROOT}/.terraform/
+    - ${TF_ROOT}/terraform.tfstate
+    - ${TF_ROOT}/terraform.tfstate.backup
+
+before_script:
+  - echo "Starting pipeline for $CI_PROJECT_NAME"
+
+lint:
+  stage: lint
+  image: python:3.10
+  script:
+    - pip install flake8
+    - flake8 . --exclude=venv
+  only:
+    - main
+
+unit_tests:
+  stage: test
+  image: python:3.10
+  script:
+    - pip install -r requirements.txt
+    - pytest tests/
+  only:
+    - main
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo $DOCKERHUB_KEY | docker login -u $DOCKERHUB_NAME --password-stdin
+    - docker build -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE
+  only:
+    - main
+
+
+deploy:
+  stage: staging
+  script:
+    - apk add sudo
+    - cd terraform/
+    - sudo chmod 600 devops_project.pem 
+    - terraform init
+    - terraform validate
+    - terraform plan
+    - terraform apply -auto-approve
+  only:
+    - main
+
+test:
+  stage: staging
+  script:
+    - apk add curl
+    - curl -f $(terraform output -raw website_url) && echo "Success"
+  dependencies:
+    - deploy
+  only:
+    - main
+
+cleanup:
+  stage: staging
+  script:
+    - terraform destroy -auto-approve
+  only:
+    - main
+  when: manual
+
+deploy_production:
+  stage: deploy_production
+  script:
+    - cd terraform/
+  #  - terraform apply -auto-approve -var="environment=production"
+  only:
+    - main
+  when: on_success
