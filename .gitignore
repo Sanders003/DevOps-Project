@@ -3,4 +3,4 @@ instance/
 *.csv
 terraform/terraform*
 terraform/.terraform*
-keys/
+*.pem

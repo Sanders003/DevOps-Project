@@ -63,7 +63,7 @@ deploy:
   script:
     - apk add sudo
     - cd terraform/
-    - sudo chmod 600 devops_project.pem 
+    - sudo chmod 600 project.pem 
     - terraform init
     - terraform validate
     - terraform plan

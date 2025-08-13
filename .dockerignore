@@ -2,10 +2,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.prm
+*.yml
 env/
 venv/
 instance/
 *.db
-keys/
 terraform/
 *.csv
