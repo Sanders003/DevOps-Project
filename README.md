@@ -6,22 +6,22 @@ This project demonstrates a complete DevOps workflow for deploying a Flask authe
 
 The solution includes:
 
-* A Flask authentication application container
-* AWS infrastructure provisioning (VPC, subnets, security groups)
-* Private S3 bucket for sensitive data
-* IAM roles for secure S3 access
-* Automated CI/CD pipeline with testing and deployment
+- A Flask authentication application container
+- AWS infrastructure provisioning (VPC, subnets, security groups)
+- Private S3 bucket for sensitive data
+- IAM roles for secure S3 access
+- Automated CI/CD pipeline with testing and deployment
 
 ## Infrastructure Components
 
 ### AWS Resources Provisioned:
 
-* **VPC** with public and private subnets
-* **Internet Gateway** and **NAT Gateway** for network traffic
-* **EC2 Instance** running Docker with the Flask app
-* **Private S3 Bucket** for sensitive data storage
-* **IAM Role** for secure S3 access from EC2
-* **Security Groups** controlling access to the Flask app
+- **VPC** with public and private subnets
+- **Internet Gateway** and **NAT Gateway** for network traffic
+- **EC2 Instance** running Docker with the Flask app
+- **Private S3 Bucket** for sensitive data storage
+- **IAM Role** for secure S3 access from EC2
+- **Security Groups** controlling access to the Flask app
 
 ## CI/CD Pipeline
 
@@ -51,23 +51,23 @@ This project uses GitLab **CI/CD Variables** to securely store and manage creden
 
 #### How to Set Them Up
 
-* **AWS Keys** → Create from AWS IAM → Security Credentials → Access Keys
-* **DockerHub Token** → DockerHub → Account Settings → Security → Access Tokens
-* **Add to GitLab** → `Project Settings → CI/CD → Variables → Add Variable`
+- **AWS Keys** → Create from AWS IAM → Security Credentials → Access Keys
+- **DockerHub Token** → DockerHub → Account Settings → Security → Access Tokens
+- **Add to GitLab** → `Project Settings → CI/CD → Variables → Add Variable`
 
 > Ensure variables are marked **Protected** and **Masked** in GitLab.
 
 ### Successful Pipeline Run:
 
-[Pipeline](https://gitlab.com/Sanders003/DevOps-Project/-/pipelines/)
+[Pipeline](https://gitlab.com/Sanders003/DevOps-Project/-/pipelines/1984987113)
 
 ## Getting Started
 
 ### Prerequisites
 
-* AWS account with appropriate permissions
-* Terraform v1.0+
-* Docker
+- AWS account with appropriate permissions
+- Terraform v1.0+
+- Docker
 
 ### Installation
 
@@ -102,10 +102,10 @@ This project uses GitLab **CI/CD Variables** to securely store and manage creden
 
 ## Security Features
 
-* Private S3 bucket with restricted access
-* IAM role with least-privilege permissions
-* Security group restricting access to necessary ports
-* Sensitive credentials managed through environment variables
+- Private S3 bucket with restricted access
+- IAM role with least-privilege permissions
+- Security group restricting access to necessary ports
+- Sensitive credentials managed through environment variables
 
 ## Cleanup
 
@@ -118,4 +118,3 @@ terraform destroy -auto-approve
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss proposed changes.
-
