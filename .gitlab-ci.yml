@@ -89,7 +89,7 @@ test_staging:
 cleanup_staging:
   stage: cleanup_staging
   script:
+    - terraform init
     - terraform destroy -auto-approve
   when: manual 
-  dependencies:
-    - deploy_staging
+  allow_failure: true
