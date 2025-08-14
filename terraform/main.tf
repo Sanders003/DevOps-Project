@@ -7,7 +7,7 @@ terraform {
   }
 }
 
-provider "aws" {
+provider aws {
   region = "ap-south-2"
 }
 
@@ -15,14 +15,14 @@ provider "aws" {
 # VPC and Networking
 #-------------------------------------------------
 
-resource "aws_vpc" "custom_vpc" {
+resource aws_vpc custom_vpc {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name = "private-vpc"
   }
 }
 
-resource "aws_subnet" "public_subnet" {
+resource aws_subnet public_subnet {
   vpc_id                  = aws_vpc.custom_vpc.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "ap-south-2a"
@@ -32,7 +32,7 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
-resource "aws_subnet" "private_subnet" {
+resource aws_subnet private_subnet {
   vpc_id            = aws_vpc.custom_vpc.id
   cidr_block        = "10.0.2.0/24"
   availability_zone = "ap-south-2a"
@@ -41,18 +41,18 @@ resource "aws_subnet" "private_subnet" {
   }
 }
 
-resource "aws_internet_gateway" "igw" {
+resource aws_internet_gateway igw {
   vpc_id = aws_vpc.custom_vpc.id
   tags = {
     Name = "internet-gateway"
   }
 }
 
-resource "aws_eip" "nat_eip" {
+resource aws_eip nat_eip {
   domain = "vpc"
 }
 
-resource "aws_nat_gateway" "nat_gateway" {
+resource aws_nat_gateway nat_gateway {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.public_subnet.id
   tags = {
@@ -65,7 +65,7 @@ resource "aws_nat_gateway" "nat_gateway" {
 # Route Tables
 #-------------------------------------------------
 
-resource "aws_route_table" "public_rt" {
+resource aws_route_table public_rt {
   vpc_id = aws_vpc.custom_vpc.id
   route {
     cidr_block = "0.0.0.0/0"
@@ -76,7 +76,7 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-resource "aws_route_table" "private_rt" {
+resource aws_route_table private_rt {
   vpc_id = aws_vpc.custom_vpc.id
   route {
     cidr_block     = "0.0.0.0/0"
@@ -87,12 +87,12 @@ resource "aws_route_table" "private_rt" {
   }
 }
 
-resource "aws_route_table_association" "public_rt_assoc" {
+resource aws_route_table_association public_rt_assoc {
   subnet_id      = aws_subnet.public_subnet.id
   route_table_id = aws_route_table.public_rt.id
 }
 
-resource "aws_route_table_association" "private_rt_assoc" {
+resource aws_route_table_association private_rt_assoc {
   subnet_id      = aws_subnet.private_subnet.id
   route_table_id = aws_route_table.private_rt.id
 }
@@ -102,7 +102,7 @@ resource "aws_route_table_association" "private_rt_assoc" {
 #-------------------------------------------------
 
 # Create a unique, private S3 bucket
-resource "aws_s3_bucket" "data_source_bucket" {
+resource aws_s3_bucket data_source_bucket {
   # Bucket names must be globally unique
   bucket = "flask-app-private-data-source-${random_id.bucket_suffix.hex}"
 
@@ -112,7 +112,7 @@ resource "aws_s3_bucket" "data_source_bucket" {
 }
 
 # Enforce private access settings on the bucket
-resource "aws_s3_bucket_public_access_block" "private_access" {
+resource aws_s3_bucket_public_access_block private_access {
   bucket = aws_s3_bucket.data_source_bucket.id
 
   block_public_acls       = true
@@ -122,17 +122,17 @@ resource "aws_s3_bucket_public_access_block" "private_access" {
 }
 
 # Upload a sample data file to our new bucket
-resource "aws_s3_object" "data_file" {
+resource aws_s3_object data_file {
   bucket = aws_s3_bucket.data_source_bucket.id
   key    = "data.txt"
-  content = "This is secret data from the private S3 bucket."
+  content = "This is secret data from the private S3 bucket.\n"
   tags = {
     Name = "SecretDataFile"
   }
 }
 
 # Used to create a unique bucket name
-resource "random_id" "bucket_suffix" {
+resource random_id bucket_suffix {
   byte_length = 8
 }
 
@@ -141,7 +141,7 @@ resource "random_id" "bucket_suffix" {
 #-------------------------------------------------
 
 # IAM policy that allows reading from our specific S3 bucket
-data "aws_iam_policy_document" "s3_read_policy_doc" {
+data aws_iam_policy_document s3_read_policy_doc {
   statement {
     actions = [
       "s3:GetObject",
@@ -155,7 +155,7 @@ data "aws_iam_policy_document" "s3_read_policy_doc" {
 }
 
 # The IAM role that the EC2 instance will assume
-resource "aws_iam_role" "ec2_s3_access_role" {
+resource aws_iam_role ec2_s3_access_role {
   name = "ec2-s3-access-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -172,19 +172,19 @@ resource "aws_iam_role" "ec2_s3_access_role" {
 }
 
 # The IAM policy based on the document above
-resource "aws_iam_policy" "s3_read_policy" {
+resource aws_iam_policy s3_read_policy {
   name   = "s3-read-access-policy"
   policy = data.aws_iam_policy_document.s3_read_policy_doc.json
 }
 
 # Attach the policy to the role
-resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+resource aws_iam_role_policy_attachment attach_s3_policy {
   role       = aws_iam_role.ec2_s3_access_role.name
   policy_arn = aws_iam_policy.s3_read_policy.arn
 }
 
 # Create an instance profile to attach the role to the EC2 instance
-resource "aws_iam_instance_profile" "ec2_profile" {
+resource aws_iam_instance_profile ec2_profile {
   name = "ec2-s3-access-profile"
   role = aws_iam_role.ec2_s3_access_role.name
 }
@@ -193,7 +193,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # Security Group for Public App
 #-------------------------------------------------
 
-resource "aws_security_group" "flask_sg" {
+resource aws_security_group flask_sg {
   name        = "flask_sg"
   description = "Allow SSH and App Port 8000"
   vpc_id      = aws_vpc.custom_vpc.id
@@ -203,7 +203,7 @@ resource "aws_security_group" "flask_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # WARNING: For demo only. Restrict to your IP in production.
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
   ingress {
@@ -226,21 +226,19 @@ resource "aws_security_group" "flask_sg" {
 # Public EC2 Instance
 #-------------------------------------------------
 
-resource "aws_instance" "flask_app" {
-  ami                      = "ami-07891c5a242abf4bc" # ap-south-2 Ubuntu 22.04
+resource aws_instance flask_app {
+  ami                      = "ami-07891c5a242abf4bc"
   instance_type            = "t3.micro"
   key_name                 = "project"
   vpc_security_group_ids   = [aws_security_group.flask_sg.id]
   subnet_id                = aws_subnet.public_subnet.id
   associate_public_ip_address = true
-  # Attach the IAM role via the instance profile
   iam_instance_profile     = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "FlaskAppServer"
   }
 
-  # This script now fetches data from the S3 bucket
   user_data = <<-EOF
               #!/bin/bash
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
