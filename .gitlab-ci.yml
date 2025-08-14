@@ -2,9 +2,10 @@ stages:
   - lint
   - test
   - build
-  - staging
-  - deploy_production
-
+  - deploy_staging
+  - test_staging
+  - cleanup_staging
+  
 variables:
   DOCKER_IMAGE: "sanders003/flask-auth-app:latest"
   TF_ROOT: ${CI_PROJECT_DIR}/terraform
@@ -15,85 +16,80 @@ variables:
 
 default:
   image:
-    name: registry.gitlab.com/sanders003-group/devops-project/terraform
-
-cache:
-  key: "${TF_STATE_NAME}"
-  paths:
-    - ${TF_ROOT}/.terraform/
-    - ${TF_ROOT}/terraform.tfstate
-    - ${TF_ROOT}/terraform.tfstate.backup
+    name: hashicorp/terraform:latest
+    entrypoint: [""] # entrypoint to allow shell scripts
+  cache:
+    key: "${TF_STATE_NAME}"
+    paths:
+      - ${TF_ROOT}/.terraform/
+      - ${TF_ROOT}/terraform.tfstate
+      - ${TF_ROOT}/terraform.tfstate.backup
 
 before_script:
   - echo "Starting pipeline for $CI_PROJECT_NAME"
-
+  - cd ${TF_ROOT}
+  
 lint:
   stage: lint
   image: python:3.10
+  before_script: [] 
   script:
+    - cd ${CI_PROJECT_DIR}
     - pip install flake8
     - flake8 . --exclude=venv
-  only:
-    - main
 
 unit_tests:
   stage: test
   image: python:3.10
+  before_script: [] 
   script:
+    - cd ${CI_PROJECT_DIR}
     - pip install -r requirements.txt
     - pytest tests/
-  only:
-    - main
 
 build:
   stage: build
   image: docker:latest
   services:
     - docker:dind
+  before_script: []
   script:
+    - cd ${CI_PROJECT_DIR}
     - echo $DOCKERHUB_KEY | docker login -u $DOCKERHUB_NAME --password-stdin
     - docker build -t $DOCKER_IMAGE .
     - docker push $DOCKER_IMAGE
-  only:
-    - main
 
-
-deploy:
-  stage: staging
+deploy_staging:
+  stage: deploy_staging
   script:
-    - apk add sudo
-    - cd terraform/
-    - sudo chmod 600 project.pem 
+    - apk add --no-cache sudo
     - terraform init
     - terraform validate
-    - terraform plan
-    - terraform apply -auto-approve
-  only:
-    - main
+    - terraform plan -out=plan.tfplan
+    - terraform apply -auto-approve plan.tfplan
+  artifacts:
+    paths:
+      - ${TF_ROOT}/terraform.tfstate
 
-test:
-  stage: staging
+test_staging:
+  stage: test_staging
   script:
-    - apk add curl
-    - curl -f $(terraform output -raw website_url) && echo "Success"
+    - apk add --no-cache curl
+    - |
+      URL=$(terraform output -raw website_url)
+      if [ -z "$URL" ]; then
+        echo "Failed to get website_url from terraform output"
+        exit 1
+      fi
+      echo "Testing URL: $URL"
+      curl -f $URL && echo "Success"
   dependencies:
-    - deploy
-  only:
-    - main
+    - deploy_staging
 
-cleanup:
-  stage: staging
+cleanup_staging:
+  stage: cleanup_staging
   script:
     - terraform destroy -auto-approve
-  only:
-    - main
-  when: manual
-
-deploy_production:
-  stage: deploy_production
-  script:
-    - cd terraform/
-  #  - terraform apply -auto-approve -var="environment=production"
-  only:
-    - main
-  when: on_success
+  when: manual 
+  dependencies:
+    - deploy_staging
